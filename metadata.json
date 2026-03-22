@@ -1,0 +1,5 @@
+{
+  "name": "Lumix AI - Photo Editor",
+  "description": "A professional-grade AI photo editor with background removal, HD enhancement, object removal, and layered editing. Installable on Android and iOS.",
+  "requestFramePermissions": ["camera"]
+}
