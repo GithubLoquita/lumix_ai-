@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { auth, db, storage } from './firebase';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Image as ImageIcon, 
@@ -213,7 +212,6 @@ const DrawingLayer = ({ layer, isSelected, onSelect, onChange }: any) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -229,22 +227,11 @@ export default function App() {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (u) {
-        const q = query(collection(db, 'projects'), where('userId', '==', u.uid));
-        return onSnapshot(q, (snapshot) => {
-          setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-        });
-      }
+    const q = query(collection(db, 'projects'), where('userId', '==', 'guest'));
+    return onSnapshot(q, (snapshot) => {
+      setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
     });
-    return () => unsubscribe();
   }, []);
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
 
   const addLayer = (type: LayerType['type'], src?: string) => {
     const newLayer: LayerType = {
@@ -273,7 +260,7 @@ export default function App() {
       setCurrentProject({
         id: 'new',
         name: 'Untitled Project',
-        userId: user?.uid || 'guest',
+        userId: 'guest',
         layers: [newLayer],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -454,7 +441,7 @@ export default function App() {
     setCurrentProject({
       id: 'new',
       name: 'Untitled Project',
-      userId: user?.uid || 'guest',
+      userId: 'guest',
       layers: [],
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -463,32 +450,6 @@ export default function App() {
   };
 
   const stageRef = useRef<any>(null);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#1e1e1e] flex flex-col items-center justify-center p-6 text-white font-sans">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md"
-        >
-          <div className="w-20 h-20 bg-[#001e36] border border-[#00a3ff] rounded-xl mx-auto mb-8 flex items-center justify-center shadow-2xl">
-            <span className="text-[#00a3ff] font-bold text-3xl">Ps</span>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Lumix AI</h1>
-          <p className="text-zinc-400 text-lg mb-12">Adobe-style professional photo editing powered by next-gen AI.</p>
-          
-          <button 
-            onClick={handleLogin}
-            className="w-full bg-[#00a3ff] text-white py-3 rounded-md font-semibold text-lg hover:bg-[#0082cc] transition-colors flex items-center justify-center gap-3"
-          >
-            <UserIcon className="w-5 h-5" />
-            Sign In
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen bg-[#1e1e1e] text-[#cccccc] flex flex-col overflow-hidden font-sans select-none">
@@ -508,10 +469,7 @@ export default function App() {
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-zinc-500">{user.email}</span>
-          <button onClick={() => signOut(auth)} className="hover:text-white transition-colors">
-            <LogOut className="w-3 h-3" />
-          </button>
+          <span className="text-[10px] text-zinc-500">Guest User</span>
         </div>
       </div>
 
